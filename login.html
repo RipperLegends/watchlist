@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="uk">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Watchlist — Вхід</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#6366f1">
+</head>
+
+<body class="page-auth page-login">
+  <!-- Navigation bar -->
+  <nav class="header-nav">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo"><span class="nav-logo-mark">◐</span> Watchlist</a>
+      <div class="nav-menu">
+        <a href="index.html" class="nav-link">Головна</a>
+        <a href="/catalog.html" class="nav-link">Каталог</a>
+      </div>
+      <div class="nav-actions">
+        <button class="btn btn-icon" id="btn-theme" title="Змінити тему">🌙</button>
+        <a href="register.html" class="nav-link">Реєстрація</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="auth-screen">
+    <div class="auth-screen-noise"></div>
+    <section class="auth-modal-shell">
+      <div class="auth-card auth-card-modal" data-parallax>
+        <a href="index.html" class="auth-dismiss" aria-label="Повернутися на головну">✕</a>
+        <div class="auth-card-topline">
+          <span class="auth-mark">◐</span>
+          <span class="auth-mode-badge">Вхід</span>
+        </div>
+        <div class="auth-hero-copy">
+          <h1>Поверніться до свого Watchlist</h1>
+          <p>Зайдіть у свій простір, щоб продовжити вести каталог, оновлювати статуси і швидко знаходити, що дивитися далі.</p>
+        </div>
+
+        <form id="login-form" class="auth-form-stack" data-auth-form="login">
+          <div class="form-group auth-field-group">
+            <label for="login-identifier">Логін або email</label>
+            <input type="text" id="login-identifier" required placeholder="Введіть логін або email" autocomplete="username">
+          </div>
+          <div class="form-group auth-field-group">
+            <label for="login-password">Пароль</label>
+            <div class="auth-input-shell">
+              <input type="password" id="login-password" required placeholder="Ваш пароль" autocomplete="current-password">
+              <button type="button" class="auth-visibility-toggle" data-toggle-password="login-password" aria-label="Показати або приховати пароль">◉</button>
+            </div>
+          </div>
+
+          <div class="form-actions auth-actions">
+            <button type="submit" class="btn btn-primary auth-submit">Увійти</button>
+          </div>
+          <p class="auth-link">Ще немає акаунта? <a href="register.html">Зареєструватися</a></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/parallax.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="uk">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Watchlist — Адмін панель</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#6366f1">
+</head>
+
+<body class="page-admin">
+  <!-- Top bar -->
+  <div class="top-bar">
+    <div class="top-bar-inner nav-container">
+      <a href="index.html" class="top-bar-logo nav-logo"><span class="nav-logo-mark">◐</span> Watchlist</a>
+      <nav class="top-nav nav-menu">
+        <a href="index.html" class="nav-link">Головна</a>
+        <a href="/catalog.html" class="nav-link">Каталог</a>
+      </nav>
+      <div class="top-bar-actions nav-actions">
+        <button class="btn btn-icon" id="btn-theme" title="Змінити тему">🌙</button>
+        <div class="top-bar-auth" id="top-bar-auth"></div>
+      </div>
+    </div>
+  </div>
+
+  <main class="admin-app-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-head">
+        <span class="admin-sidebar-mark">W</span>
+        <div>
+          <strong>Watchlist Admin</strong>
+          <span>Центр керування</span>
+        </div>
+      </div>
+      <nav class="admin-side-nav" aria-label="Адмін навігація">
+        <button class="admin-side-link active" type="button" data-admin-view="overview">Огляд</button>
+        <button class="admin-side-link" type="button" data-admin-view="users">Користувачі</button>
+        <button class="admin-side-link" type="button" data-admin-view="content">Контент</button>
+        <button class="admin-side-link" type="button" data-admin-view="reports">Звернення</button>
+        <button class="admin-side-link" type="button" data-admin-view="moderation">Модерація</button>
+        <button class="admin-side-link" type="button" data-admin-view="audit">Аудит</button>
+        <button class="admin-side-link" type="button" data-admin-view="maintenance">Обслуговування</button>
+      </nav>
+      <div class="admin-sidebar-foot">
+        <span>Стан БД</span>
+        <strong id="admin-sidebar-db-status">Перевірка...</strong>
+      </div>
+    </aside>
+
+    <section class="admin-workspace">
+      <section class="admin-panel active" data-admin-panel="overview">
+        <div class="admin-dashboard-hero">
+          <div>
+            <p class="eyebrow">Адміністрування</p>
+            <h1>Огляд системи</h1>
+            <p>Метрики, звернення, блокування і стан бази в одному робочому екрані.</p>
+          </div>
+          <div class="admin-quick-actions">
+            <button class="btn btn-primary" type="button" data-jump-view="users">Користувачі</button>
+            <button class="btn btn-secondary" type="button" data-jump-view="reports">Звернення</button>
+            <button class="btn btn-secondary" type="button" data-jump-view="maintenance">Обслуговування</button>
+          </div>
+        </div>
+
+        <section class="admin-metrics-grid" id="admin-metrics-grid"></section>
+
+        <section class="admin-dashboard-grid">
+          <article class="admin-dashboard-card">
+            <div class="admin-card-head">
+              <div>
+                <h3>Нові звернення</h3>
+                <p>Тікети, які ще чекають відповіді.</p>
+              </div>
+              <button class="btn btn-sm btn-secondary" type="button" data-jump-view="reports">Відкрити</button>
+            </div>
+            <div class="admin-mini-list" id="admin-overview-reports"></div>
+          </article>
+
+          <article class="admin-dashboard-card">
+            <div class="admin-card-head">
+              <div>
+                <h3>Заблоковані акаунти</h3>
+                <p>Користувачі з обмеженим доступом.</p>
+              </div>
+              <button class="btn btn-sm btn-secondary" type="button" data-jump-view="moderation">Модерація</button>
+            </div>
+            <div class="admin-mini-list" id="admin-overview-blocked"></div>
+          </article>
+
+          <article class="admin-dashboard-card admin-dashboard-card-wide">
+            <div class="admin-card-head">
+              <div>
+                <h3>Стан БД</h3>
+                <p>Цілісність зв’язків і технічне обслуговування.</p>
+              </div>
+              <button class="btn btn-sm btn-secondary" type="button" data-jump-view="maintenance">Деталі</button>
+            </div>
+            <div class="admin-maintenance-card compact" id="admin-overview-maintenance"></div>
+          </article>
+        </section>
+      </section>
+
+      <section class="admin-panel" data-admin-panel="users">
+        <div class="admin-panel-head">
+          <div>
+            <p class="eyebrow">Користувачі</p>
+            <h1>Керування акаунтами</h1>
+            <p>Пошук, ролі, блокування і швидкий перегляд активності.</p>
+          </div>
+        </div>
+        <section class="page-section admin-section">
+          <div class="admin-toolbar">
+            <div>
+              <h3>Таблиця користувачів</h3>
+              <p>Фільтри за роллю й статусом, пошук та бічна панель з деталями користувача.</p>
+            </div>
+            <div class="admin-toolbar-controls">
+              <input type="text" id="user-search" placeholder="Пошук користувачів..." class="admin-search-field">
+              <select id="user-role-filter" class="admin-search-field">
+                <option value="all">Усі</option>
+                <option value="user">Користувачі</option>
+                <option value="admin">Адміністратори</option>
+                <option value="blocked">Заблоковані</option>
+              </select>
+              <button class="btn btn-secondary" id="btn-reset-users">Скинути</button>
+            </div>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="users-table">
+              <thead>
+                <tr>
+                  <th>Користувач</th>
+                  <th>Email</th>
+                  <th>Роль</th>
+                  <th>Статус</th>
+                  <th>Активність</th>
+                  <th>Дії</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="admin-panel" data-admin-panel="content">
+        <div class="admin-panel-head">
+          <div>
+            <p class="eyebrow">Контент</p>
+            <h1>Каталог Watchlist</h1>
+            <p>Усі записи користувачів і публічні записи адміністратора.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-add-admin-entry">+ Додати запис</button>
+        </div>
+        <section class="page-section admin-section">
+          <div class="admin-toolbar">
+            <div>
+              <h3>Усі записи</h3>
+              <p>Пошук, фільтр типу і рейтинг за 5-бальною системою.</p>
+            </div>
+            <div class="admin-toolbar-controls">
+              <button class="btn btn-secondary" id="btn-reset-entries">Скинути</button>
+            </div>
+          </div>
+          <input type="text" id="entry-search" placeholder="Пошук записів..." class="admin-search-field admin-search-wide">
+          <div class="admin-filter-row">
+            <select id="entry-type-filter" class="admin-inline-filter">
+              <option value="all">Усі типи</option>
+              <option value="movie">Фільми</option>
+              <option value="series">Серіали</option>
+            </select>
+            <select id="entry-rating-filter" class="admin-inline-filter">
+              <option value="all">Усі оцінки</option>
+              <option value="5">5★</option>
+              <option value="4">4+</option>
+              <option value="3">3+</option>
+              <option value="2">2+</option>
+              <option value="1">1+</option>
+            </select>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table" id="entries-table">
+              <thead>
+                <tr>
+                  <th>Назва</th>
+                  <th>Тип</th>
+                  <th>Користувач</th>
+                  <th>Статус</th>
+                  <th>Оцінка</th>
+                  <th>Дії</th>
+                </tr>
+              </thead>
+              <tbody id="entries-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="admin-panel" data-admin-panel="reports">
+        <div class="admin-panel-head">
+          <div>
+            <p class="eyebrow">Звернення</p>
+            <h1>Скарги і підтримка</h1>
+            <p>Kanban по статусах, відповідь адміністратора і коротка історія тікета.</p>
+          </div>
+          <select id="report-status-filter" class="admin-inline-filter">
+            <option value="all">Усі звернення</option>
+            <option value="new">Нові</option>
+            <option value="reviewing">В роботі</option>
+            <option value="answered">З відповіддю</option>
+            <option value="closed">Закриті</option>
+          </select>
+        </div>
+        <div id="admin-reports-list"></div>
+      </section>
+
+      <section class="admin-panel" data-admin-panel="moderation">
+        <div class="admin-panel-head">
+          <div>
+            <p class="eyebrow">Модерація</p>
+            <h1>Безпека користувачів</h1>
+            <p>Заблоковані акаунти та звернення, які потребують уваги.</p>
+          </div>
+        </div>
+        <div class="admin-dashboard-grid">
+          <article class="admin-dashboard-card">
+            <div class="admin-card-head">
+              <div>
+                <h3>Заблоковані користувачі</h3>
+                <p>Акаунти без доступу до сайту.</p>
+              </div>
+            </div>
+            <div class="admin-mini-list" id="admin-moderation-blocked"></div>
+          </article>
+          <article class="admin-dashboard-card">
+            <div class="admin-card-head">
+              <div>
+                <h3>Нові тікети</h3>
+                <p>Скарги та звернення без відповіді.</p>
+              </div>
+            </div>
+            <div class="admin-mini-list" id="admin-moderation-reports"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-admin-panel="audit">
+        <div class="admin-panel-head">
+          <div>
+            <p class="eyebrow">Аудит</p>
+            <h1>Журнал активності</h1>
+            <p>Останні системні дії, входи, блокування, відповіді і обслуговування БД.</p>
+          </div>
+        </div>
+        <section class="page-section admin-section">
+          <div id="admin-audit-list"></div>
+        </section>
+      </section>
+
+      <section class="admin-panel" data-admin-panel="maintenance">
+        <div class="admin-panel-head">
+          <div>
+            <p class="eyebrow">Обслуговування</p>
+            <h1>Обслуговування БД</h1>
+            <p>Сироти БД, кількість проблем, остання очистка і безпечне очищення.</p>
+          </div>
+          <button class="btn btn-secondary" id="btn-clean-orphans" type="button">Очистити сироти БД</button>
+        </div>
+        <div class="admin-maintenance-card" id="admin-maintenance-summary"></div>
+        <div class="admin-maintenance-details" id="admin-maintenance-details"></div>
+      </section>
+    </section>
+  </main>
+
+  <div class="admin-drawer-overlay" id="user-drawer-overlay">
+    <aside class="admin-user-drawer" id="user-drawer" aria-hidden="true">
+      <div class="admin-drawer-head">
+        <div>
+          <p class="eyebrow">Профіль користувача</p>
+          <h2 id="drawer-user-name">Користувач</h2>
+        </div>
+        <button class="btn-close" id="user-drawer-close" type="button">&times;</button>
+      </div>
+      <div class="admin-drawer-body" id="user-drawer-body"></div>
+      <div class="admin-drawer-actions">
+        <button class="btn btn-primary" id="drawer-edit-user" type="button">Редагувати</button>
+        <button class="btn btn-secondary" id="drawer-block-user" type="button">Блок</button>
+        <button class="btn btn-danger" id="drawer-delete-user" type="button">Видалити</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal-overlay" id="edit-user-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Редагувати користувача</h3>
+        <button class="btn-close" id="edit-user-close">&times;</button>
+      </div>
+      <form id="edit-user-form">
+        <input type="hidden" id="edit-user-id">
+        <div class="form-group">
+          <label for="edit-user-name">Логін</label>
+          <input type="text" id="edit-user-name" required minlength="3">
+        </div>
+        <div class="form-group">
+          <label for="edit-user-email">Email</label>
+          <input type="email" id="edit-user-email" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-user-password">Новий пароль (залиште порожнім, щоб не змінювати)</label>
+          <input type="password" id="edit-user-password" placeholder="Новий пароль">
+        </div>
+        <div class="form-group">
+          <label for="edit-user-role">Роль</label>
+          <select id="edit-user-role">
+            <option value="user">user</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="edit-user-cancel">Скасувати</button>
+          <button type="submit" class="btn btn-primary">Зберегти</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="add-entry-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Додати новий запис</h3>
+        <button class="btn-close" id="add-entry-close">&times;</button>
+      </div>
+      <form id="add-entry-form">
+        <input type="hidden" id="entry-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="entry-title">Назва</label>
+            <input type="text" id="entry-title" required>
+          </div>
+          <div class="form-group">
+            <label for="entry-type">Тип</label>
+            <select id="entry-type">
+              <option value="movie">Фільм</option>
+              <option value="series">Серіал</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="entry-status">Статус</label>
+            <select id="entry-status">
+              <option value="watched">Переглянуто</option>
+              <option value="watching">Дивлюся</option>
+              <option value="plan_to_watch">В планах</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Каталог</label>
+            <input type="text" value="Запис буде додано в спільний каталог" disabled>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="entry-rating">Оцінка</label>
+            <input type="number" id="entry-rating" min="0" max="5" value="3">
+          </div>
+          <div class="form-group">
+            <label for="entry-year">Рік</label>
+            <input type="number" id="entry-year" min="1900" max="2100" placeholder="2024">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="entry-genre">Жанри (через кому)</label>
+            <input type="text" id="entry-genre" placeholder="драма, фантастика">
+          </div>
+          <div class="form-group">
+            <label for="entry-tags">Теги</label>
+            <input type="text" id="entry-tags" placeholder="must-watch, staff-pick">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="entry-mood">Настрій</label>
+            <input type="text" id="entry-mood" placeholder="темний, легкий, драйвовий">
+          </div>
+          <div class="form-group">
+            <label for="entry-director">Режисер</label>
+            <input type="text" id="entry-director" placeholder="Ім'я режисера">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="entry-runtime">Тривалість (хв)</label>
+            <input type="number" id="entry-runtime" min="0" placeholder="120">
+          </div>
+          <div class="form-group">
+            <label for="entry-poster">Постер (URL)</label>
+            <input type="url" id="entry-poster" placeholder="https://...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group checkbox-label checkbox-inline-center">
+            <input type="checkbox" id="entry-favorite">
+            <span>Улюблене</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="entry-comment">Коментар</label>
+          <textarea id="entry-comment" rows="3" placeholder="Ваш коментар"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="add-entry-cancel">Скасувати</button>
+          <button type="submit" class="btn btn-primary">Зберегти запис</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirm-overlay">
+    <div class="modal modal-confirm" role="dialog" aria-modal="true">
+      <p id="confirm-message">Ви впевнені?</p>
+      <div class="form-actions">
+        <button class="btn btn-secondary" id="confirm-cancel">Скасувати</button>
+        <button class="btn btn-danger" id="confirm-yes">Так, видалити</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/parallax.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+
+</html>

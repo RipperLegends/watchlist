@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="uk">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Watchlist — Друзі</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#6366f1">
+</head>
+
+<body class="page-discover">
+  <div class="top-bar">
+    <div class="top-bar-inner nav-container">
+      <a href="index.html" class="top-bar-logo nav-logo"><span class="nav-logo-mark">◐</span> Watchlist</a>
+      <nav class="top-nav nav-menu">
+        <a href="index.html" class="nav-link">Головна</a>
+        <a href="/catalog.html" class="nav-link">Каталог</a>
+      </nav>
+      <div class="top-bar-actions nav-actions">
+        <button class="btn btn-icon" id="btn-theme" title="Змінити тему">🌙</button>
+        <div class="top-bar-auth" id="top-bar-auth"></div>
+      </div>
+    </div>
+  </div>
+
+  <header class="header header-large discover-hero">
+    <div class="container header-content discover-hero-grid">
+      <div class="discover-hero-copy">
+        <p class="eyebrow">Друзі</p>
+        <h1>Друзі, заявки й чат в одному місці</h1>
+        <p class="subtitle">Керуйте контактами, бачте активність друзів, підтримуйте стріки спілкування і швидко домовляйтесь, що дивитися разом.</p>
+      </div>
+      <div class="friends-hero-panel" id="friends-hero-panel">
+        <div>
+          <span class="friends-panel-label">Друзі онлайн</span>
+          <strong id="friends-online-count">0</strong>
+        </div>
+        <div>
+          <span class="friends-panel-label">Активний стрік</span>
+          <strong id="friends-best-streak">0 днів</strong>
+        </div>
+        <div>
+          <span class="friends-panel-label">Топ рівень</span>
+          <strong id="friends-best-level">Lv. 1</strong>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container page-shell friends-shell">
+    <section class="friends-toolbar">
+      <div class="friends-search-box">
+        <label for="friend-search">Пошук друзів</label>
+        <input type="search" id="friend-search" placeholder="Пошук за нікнеймом">
+      </div>
+      <div class="friends-search-box">
+        <label for="user-search">Додати друга</label>
+        <div class="friends-add-row">
+          <input type="search" id="user-search" placeholder="Нікнейм користувача">
+          <button class="btn btn-primary" id="btn-send-request">Надіслати заявку</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="friends-layout">
+      <div class="friends-main-column">
+        <section class="friends-panel">
+          <div class="section-header section-header-compact">
+            <h2>Список друзів</h2>
+            <p>Онлайн-статус, рівень дружби, стрік і швидкі дії.</p>
+          </div>
+          <div class="friends-list" id="friends-list"></div>
+        </section>
+
+      </div>
+
+      <aside class="friends-side-column">
+        <section class="friends-panel">
+          <div class="section-header section-header-compact">
+            <h2>Заявки</h2>
+            <p>Приймайте або відхиляйте нові запити.</p>
+          </div>
+          <div class="friend-request-list" id="incoming-requests"></div>
+          <div class="friend-request-list" id="outgoing-requests"></div>
+        </section>
+
+        <section class="friends-panel">
+          <div class="section-header section-header-compact">
+            <h2>Рейтинг друзів</h2>
+            <p>Топ за активністю, чатом і взаємодіями.</p>
+          </div>
+          <div class="friends-ranking" id="friends-ranking"></div>
+        </section>
+
+      </aside>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="chat-overlay">
+    <div class="modal friends-chat-modal">
+      <div class="modal-header">
+        <h2 id="chat-title">Швидкий чат</h2>
+        <button class="btn-close" id="chat-close" type="button">&times;</button>
+      </div>
+      <div class="friends-chat-log" id="chat-log"></div>
+      <form class="friends-chat-form" id="chat-form">
+        <input id="chat-input" placeholder="Напишіть повідомлення..." maxlength="1000">
+        <button class="btn btn-primary" type="submit">Надіслати</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+  <script src="js/auth.js"></script>
+  <script src="js/parallax.js"></script>
+  <script src="js/friends.js"></script>
+</body>
+
+</html>

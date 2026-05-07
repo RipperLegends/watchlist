@@ -1,0 +1,41 @@
+{
+  "name": "watchlist",
+  "version": "0.0.1",
+  "description": "",
+  "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "keywords": [
+    ""
+  ],
+  "license": "",
+  "author": "",
+  "scripts": {
+    "start": "webpack serve --open --config webpack.config.dev.js",
+    "build": "webpack --config webpack.config.prod.js",
+    "server": "node server.js",
+    "test:e2e": "node scripts/smoke-audit.js",
+    "db:supabase:dry-run": "node scripts/migrate-sqlite-to-supabase.js",
+    "db:supabase:migrate": "node scripts/migrate-sqlite-to-supabase.js"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^14.0.0",
+    "html-webpack-plugin": "^5.6.0",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4",
+    "webpack-merge": "^5.10.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.20.0",
+    "playwright": "^1.59.1",
+    "sqlite3": "^6.0.1",
+    "ws": "^8.20.0"
+  }
+}

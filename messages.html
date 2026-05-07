@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="uk">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Watchlist — Повідомлення</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#6366f1">
+</head>
+
+<body class="page-profile page-messages">
+  <nav class="header-nav">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo"><span class="nav-logo-mark">◐</span> Watchlist</a>
+      <nav class="nav-menu">
+        <a href="index.html" class="nav-link">Головна</a>
+        <a href="/catalog.html" class="nav-link">Каталог</a>
+      </nav>
+      <div class="nav-actions">
+        <button class="btn btn-icon" id="btn-theme" title="Змінити тему">🌙</button>
+        <div class="nav-auth" id="top-bar-auth"></div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container page-shell messages-shell">
+    <section class="page-lead">
+      <p class="eyebrow">Повідомлення</p>
+      <h1>Чати з друзями</h1>
+      <p>Тут зібрані повідомлення тільки від користувачів, які є у вас в друзях.</p>
+    </section>
+
+    <section class="messages-layout">
+      <aside class="messages-sidebar">
+        <div class="section-header section-header-compact">
+          <h2>Діалоги</h2>
+          <p>Останні повідомлення від друзів.</p>
+        </div>
+        <div class="messages-list" id="messages-list"></div>
+      </aside>
+
+      <section class="messages-panel">
+        <div class="messages-panel-header" id="messages-panel-header">
+          <div class="friend-avatar small" id="messages-active-avatar">?</div>
+          <div class="messages-panel-meta">
+            <strong id="messages-active-name">Оберіть діалог</strong>
+            <span id="messages-active-status">Повідомлення з друзями з’являться тут.</span>
+          </div>
+        </div>
+
+        <div class="friends-chat-log messages-thread" id="messages-thread">
+          <div class="friends-empty">
+            <strong>Ще немає активного діалогу.</strong>
+            <span>Виберіть друга ліворуч, щоб відкрити листування.</span>
+          </div>
+        </div>
+
+        <div class="messages-share-preview" id="messages-share-preview" hidden></div>
+        <form class="friends-chat-form messages-compose" id="messages-form">
+          <input id="messages-input" placeholder="Напишіть повідомлення..." maxlength="1000" disabled>
+          <button type="button" class="btn btn-secondary" id="messages-share-button" disabled>Подивись це</button>
+          <button type="submit" class="btn btn-primary" id="messages-send" disabled>Надіслати</button>
+        </form>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast-container" id="toast-container"></div>
+  <script src="js/auth.js"></script>
+  <script src="js/parallax.js"></script>
+  <script src="js/messages.js"></script>
+</body>
+
+</html>
