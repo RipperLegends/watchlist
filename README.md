@@ -1,6 +1,17 @@
 # Watchlist
 
-Веб-застосунок для власного каталогу фільмів, серіалів, друзів, повідомлень, звернень у підтримку і адмін-керування.
+Full-stack веб-застосунок для власного каталогу фільмів, серіалів, друзів, повідомлень, звернень у підтримку і адмін-керування.
+
+## Стек
+
+- Next.js App Router;
+- TypeScript;
+- Tailwind CSS;
+- shadcn/ui style source components;
+- PostgreSQL;
+- Prisma ORM;
+- Auth.js credentials auth;
+- Vercel deploy.
 
 ## Функціонал
 
@@ -11,14 +22,14 @@
 - звернення в підтримку з перепискою;
 - адмін-панель з користувачами, зверненнями, аудитом і maintenance;
 - footer-сторінки, сценарії, продукти і roadmap;
-- локальна SQLite БД для розробки;
-- підготовлена Supabase/Postgres схема для продакшну.
+- PostgreSQL/Prisma схема для продакшну.
 
 ## Запуск
 
 ```bash
 npm install
-npm run server
+npx prisma generate
+npm run dev
 ```
 
 Сайт буде доступний на:
@@ -33,43 +44,21 @@ http://localhost:3000
 npm run build
 ```
 
-Для smoke e2e:
-
-```bash
-npm run test:e2e
-```
-
 ## База даних
 
-Поточна локальна база:
+Prisma schema:
 
 ```bash
-watchlist.db
+prisma/schema.prisma
 ```
 
-Supabase/Postgres міграція:
+Створення міграції:
 
 ```bash
-supabase/schema.sql
-docs/supabase.md
-```
-
-Перевірка майбутнього імпорту:
-
-```bash
-npm run db:supabase:dry-run
+npm run prisma:migrate
 ```
 
 ## Env файли
 
-- `.env` - реальні локальні секрети, не комітити.
+- `.env.local` або `.env` - реальні локальні секрети, не комітити.
 - `.env.example` - безпечний шаблон зі списком потрібних змінних.
-
-## Технології
-
-- Express;
-- SQLite для локальної розробки;
-- Supabase/Postgres як наступний production-рівень БД;
-- Vanilla JavaScript;
-- HTML/CSS;
-- WebSocket для realtime-подій.

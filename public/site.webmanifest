@@ -1,0 +1,52 @@
+{
+  "short_name": "Watchlist",
+  "name": "Watchlist — Мій список переглянутого",
+  "description": "Каталог фільмів і серіалів з друзями, повідомленнями, профілем, статистикою та розумними рекомендаціями.",
+  "icons": [
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "categories": ["entertainment", "social", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Мій каталог",
+      "short_name": "Каталог",
+      "url": "/catalog",
+      "icons": [{ "src": "icon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Друзі",
+      "short_name": "Друзі",
+      "url": "/friends",
+      "icons": [{ "src": "icon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Повідомлення",
+      "short_name": "Чат",
+      "url": "/messages",
+      "icons": [{ "src": "icon.png", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 214 28% 95%;
+    --foreground: 222 42% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 42% 16%;
+    --primary: 238 88% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 27% 90%;
+    --secondary-foreground: 222 42% 16%;
+    --muted: 215 27% 90%;
+    --muted-foreground: 216 20% 43%;
+    --accent: 190 83% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 25% 84%;
+    --input: 214 25% 84%;
+    --ring: 238 88% 67%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 96%;
+    --card: 220 36% 13%;
+    --card-foreground: 210 40% 96%;
+    --primary: 238 88% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 218 29% 18%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 218 29% 18%;
+    --muted-foreground: 217 22% 70%;
+    --accent: 190 83% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 218 25% 24%;
+    --input: 218 25% 24%;
+    --ring: 238 88% 67%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply min-h-screen bg-background text-foreground antialiased;
+  }
+
+  a {
+    @apply transition-colors;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply container py-10 md:py-14;
+  }
+
+  .section-title {
+    @apply text-3xl font-extrabold tracking-normal md:text-5xl;
+  }
+
+  .section-lead {
+    @apply max-w-2xl text-base leading-7 text-muted-foreground md:text-lg;
+  }
+}

@@ -4,6 +4,8 @@ node_modules/
 # Build output and caches
 dist/
 build/
+.next/
+.turbo/
 .cache/
 
 # Environment files and local secrets
@@ -16,6 +18,7 @@ build/
 
 # Local databases
 watchlist.db
+prisma/dev.db
 *.db
 *.sqlite
 *.sqlite3
