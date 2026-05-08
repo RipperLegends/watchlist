@@ -15,8 +15,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SECRET_KEY = process.env.SECRET_KEY || 'your-secret-key';
 const REGISTRATION_MODE = String(process.env.REGISTRATION_MODE || 'open').trim().toLowerCase();
-const REGISTRATION_RATE_LIMIT = Number(process.env.REGISTRATION_RATE_LIMIT || 3);
+const REGISTRATION_RATE_LIMIT = Number(process.env.REGISTRATION_RATE_LIMIT || 5);
 const REGISTRATION_RATE_WINDOW_MS = Number(process.env.REGISTRATION_RATE_WINDOW_MS || 15 * 60 * 1000);
+const REGISTRATION_MAX_ACCOUNTS_PER_IP = Number(process.env.REGISTRATION_MAX_ACCOUNTS_PER_IP || 5);
 const DB_FILE = process.env.DB_FILE
   ? path.resolve(__dirname, process.env.DB_FILE)
   : path.join(__dirname, 'watchlist.db');
@@ -433,10 +434,13 @@ function registrationIpHash(req) {
     .digest('hex');
 }
 
-async function enforceRegistrationRateLimit(req, email) {
+async function enforceRegistrationLimits(req, email) {
   const maxAttempts = Number.isFinite(REGISTRATION_RATE_LIMIT) && REGISTRATION_RATE_LIMIT > 0
     ? REGISTRATION_RATE_LIMIT
-    : 3;
+    : 5;
+  const maxAccounts = Number.isFinite(REGISTRATION_MAX_ACCOUNTS_PER_IP) && REGISTRATION_MAX_ACCOUNTS_PER_IP > 0
+    ? REGISTRATION_MAX_ACCOUNTS_PER_IP
+    : 5;
   const windowMs = Number.isFinite(REGISTRATION_RATE_WINDOW_MS) && REGISTRATION_RATE_WINDOW_MS > 0
     ? REGISTRATION_RATE_WINDOW_MS
     : 15 * 60 * 1000;
@@ -444,7 +448,23 @@ async function enforceRegistrationRateLimit(req, email) {
   const ipHash = registrationIpHash(req);
   const emailDomain = String(email || '').split('@')[1] || '';
 
-  await dbRun('DELETE FROM registration_attempts WHERE created_at < ?', [cutoff]);
+  await dbRun("DELETE FROM registration_attempts WHERE result <> 'registered' AND created_at < ?", [cutoff]);
+
+  const registered = await dbGet(
+    "SELECT COUNT(*) AS count FROM registration_attempts WHERE ip_hash = ? AND result = 'registered'",
+    [ipHash]
+  );
+  if ((registered?.count || 0) >= maxAccounts) {
+    await dbRun(
+      'INSERT INTO registration_attempts (ip_hash, email_domain, result) VALUES (?, ?, ?)',
+      [ipHash, emailDomain, 'account_limit']
+    );
+    const error = new Error('Registration account limit reached');
+    error.statusCode = 429;
+    error.publicMessage = 'З цього IP вже створено максимальну кількість акаунтів.';
+    throw error;
+  }
+
   const recent = await dbGet(
     'SELECT COUNT(*) AS count FROM registration_attempts WHERE ip_hash = ? AND created_at >= ?',
     [ipHash, cutoff]
@@ -457,13 +477,24 @@ async function enforceRegistrationRateLimit(req, email) {
     );
     const error = new Error('Too many registration attempts');
     error.statusCode = 429;
+    error.publicMessage = 'Забагато спроб реєстрації. Спробуйте пізніше.';
     throw error;
   }
 
-  await dbRun(
+  const attempt = await dbRun(
     'INSERT INTO registration_attempts (ip_hash, email_domain, result) VALUES (?, ?, ?)',
     [ipHash, emailDomain, 'allowed']
   );
+  return { attemptId: attempt.lastID, ipHash, emailDomain };
+}
+
+async function markRegistrationAttempt(attemptId, result) {
+  if (!attemptId) return;
+  try {
+    await dbRun('UPDATE registration_attempts SET result = ? WHERE id = ?', [result, attemptId]);
+  } catch (error) {
+    console.error('Registration attempt update failed:', error.message);
+  }
 }
 
 function normalizeProfileUrl(value) {
@@ -1487,26 +1518,28 @@ app.post('/api/register', async (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 8 characters' });
   }
 
+  let registrationAttempt = null;
   try {
-    await enforceRegistrationRateLimit(req, email);
+    registrationAttempt = await enforceRegistrationLimits(req, email);
     const hashedPassword = await bcrypt.hash(password, 10);
-    db.run(
+    const result = await dbRun(
       `INSERT INTO users (
         name, email, password, presence_status, online_visibility, profile_visibility, friend_request_policy, preferred_language
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [username, email, hashedPassword, 'online', 'everyone', 'everyone', 'everyone', 'UK'],
-      function(err) {
-        if (err) return res.status(400).json({ error: 'Login or email already exists' });
-        const user = userPublicPayload({ id: this.lastID, name: username, email, role: 'user', preferred_language: 'UK' });
-        const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, SECRET_KEY, { expiresIn: '7d' });
-        sendJson(res, { token, user });
-      }
+      [username, email, hashedPassword, 'online', 'everyone', 'everyone', 'everyone', 'UK']
     );
+    await markRegistrationAttempt(registrationAttempt.attemptId, 'registered');
+    const user = userPublicPayload({ id: result.lastID, name: username, email, role: 'user', preferred_language: 'UK' });
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, SECRET_KEY, { expiresIn: '7d' });
+    sendJson(res, { token, user });
   } catch (error) {
-    if (error.statusCode === 429) {
-      return res.status(429).json({ error: 'Too many registration attempts. Try again later.' });
+    if (registrationAttempt?.attemptId) {
+      await markRegistrationAttempt(registrationAttempt.attemptId, 'rejected');
     }
-    res.status(500).json({ error: 'Server error' });
+    if (error.statusCode === 429) {
+      return res.status(429).json({ error: error.publicMessage || 'Too many registration attempts. Try again later.' });
+    }
+    res.status(400).json({ error: 'Login or email already exists' });
   }
 });
 
