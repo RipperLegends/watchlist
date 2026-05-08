@@ -809,7 +809,7 @@
             <form id="register-form-modal" class="auth-form-stack" data-auth-form="register">
               <div class="form-group auth-field-group">
                 <label for="reg-username-modal">Логін</label>
-                <input type="text" id="reg-username-modal" required placeholder="Оберіть логін" minlength="3" autocomplete="username">
+                <input type="text" id="reg-username-modal" required placeholder="Оберіть логін" minlength="3" maxlength="32" autocomplete="username">
               </div>
               <div class="form-group auth-field-group">
                 <label for="reg-email-modal">Email</label>
@@ -818,7 +818,7 @@
               <div class="form-group auth-field-group">
                 <label for="reg-password-modal">Пароль</label>
                 <div class="auth-input-shell">
-                  <input type="password" id="reg-password-modal" required placeholder="Мінімум 6 символів" minlength="6" autocomplete="new-password">
+                  <input type="password" id="reg-password-modal" required placeholder="Мінімум 8 символів" minlength="8" autocomplete="new-password">
                   <button type="button" class="auth-visibility-toggle" data-toggle-password="reg-password-modal" aria-label="Показати або приховати пароль">◉</button>
                 </div>
               </div>
@@ -1113,8 +1113,8 @@
       showToast('Паролі не збігаються');
       return;
     }
-    if (password.length < 6) {
-      showToast('Пароль має бути мінімум 6 символів');
+    if (password.length < 8) {
+      showToast('Пароль має бути мінімум 8 символів');
       return;
     }
 
