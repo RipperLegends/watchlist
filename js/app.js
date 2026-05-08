@@ -76,7 +76,9 @@
     } else if (!Array.isArray(e.tags)) {
       e.tags = [];
     }
-    if (!e.status) e.status = 'watched';
+    if (e.status === 'watched') e.status = 'completed';
+    if (e.status === 'plan_to_watch') e.status = 'planned';
+    if (!e.status) e.status = 'completed';
     if (typeof e.isFavorite !== 'boolean') e.isFavorite = !!e.isFavorite;
     if (!e.posterUrl) e.posterUrl = e.poster_url || '';
     if (!e.director) e.director = '';
@@ -173,7 +175,7 @@
     $('#entry-director').value = '';
     $('#entry-runtime').value = '';
     $('#entry-favorite').checked = false;
-    $('#entry-status').value = 'watched';
+    $('#entry-status').value = 'completed';
     $('#entry-tags').value = '';
     $('#entry-mood').value = '';
     $('#entry-season').value = '';
@@ -189,7 +191,7 @@
       $('#entry-mood').value = entry.mood || '';
       $('#entry-year').value = entry.year || '';
       $('#entry-comment').value = entry.comment || '';
-      $('#entry-status').value = entry.status || 'watched';
+      $('#entry-status').value = entry.status || 'completed';
       $('#entry-poster').value = entry.posterUrl || '';
       $('#entry-director').value = entry.director || '';
       $('#entry-runtime').value = entry.runtime || '';
@@ -213,7 +215,7 @@
     $('#entry-mood').value = item.mood || '';
     $('#entry-year').value = item.year || '';
     $('#entry-poster').value = item.posterUrl || '';
-    $('#entry-status').value = 'plan_to_watch';
+    $('#entry-status').value = 'planned';
     if (item.rating) setStars(Math.max(0, Math.min(5, Math.round(item.rating))));
     if (item.description) $('#entry-comment').value = item.description;
   }
@@ -370,7 +372,7 @@
   }
 
   function pickRandom() {
-    const planList = entries.filter(e => e.status === 'plan_to_watch');
+    const planList = entries.filter(e => e.status === 'planned');
     const resultEl = $('#random-result');
     if (!planList.length) {
       resultEl.innerHTML = '<p style="color:var(--text2)">У вас немає фільмів зі статусом «В планах» 😢</p>';
@@ -519,7 +521,13 @@
   const debouncedRender = debounce(render, searchDebounceDelay);
   searchInput.addEventListener('input', debouncedRender);
   if (resetFiltersBtn) resetFiltersBtn.addEventListener('click', resetFilters);
-  const STATUS_LABELS = { watched: 'Переглянуто', watching: 'У процесі', plan_to_watch: 'У планах' };
+  const STATUS_LABELS = {
+    completed: 'Переглянуто',
+    watched: 'Переглянуто',
+    watching: 'У процесі',
+    planned: 'У планах',
+    plan_to_watch: 'У планах'
+  };
 
   function starsHTML(r) {
     return Array.from({ length: 5 }, (_, i) => `<span class="star-display${i < r ? ' filled' : ''}">★</span>`).join('');
@@ -638,8 +646,8 @@
     if (!session) return [];
 
     const usedTitles = new Set(entries.map(entry => entry.title.toLowerCase()));
-    const watched = entries.filter(entry => entry.status === 'watched' && entry.rating >= 4);
-    const planned = entries.filter(entry => entry.status === 'plan_to_watch');
+    const watched = entries.filter(entry => entry.status === 'completed' && entry.rating >= 4);
+    const planned = entries.filter(entry => entry.status === 'planned');
     const watching = entries.filter(entry => entry.status === 'watching');
     const genreScore = {};
     watched.forEach(entry => {

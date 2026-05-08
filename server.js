@@ -310,11 +310,11 @@ function normalizeEntry(row) {
     createdByAdmin: !!row.created_by_admin,
     title: row.title,
     type: row.type,
-    status: row.status,
+    status: normalizeEntryStatus(row.status),
     rating: normalizeRatingValue(row.rating),
     year: row.year || null,
-    genre: row.genre ? JSON.parse(row.genre) : [],
-    tags: row.tags ? JSON.parse(row.tags) : [],
+    genre: parseJsonArray(row.genre),
+    tags: parseJsonArray(row.tags),
     mood: row.mood || '',
     posterUrl: row.poster_url || '',
     director: row.director || '',
@@ -327,6 +327,28 @@ function normalizeEntry(row) {
     sortOrder: row.sort_order || 0,
     createdAt: row.created_at || ''
   };
+}
+
+function normalizeEntryStatus(value, fallback = 'planned') {
+  const status = String(value || '').trim();
+  if (status === 'watched') return 'completed';
+  if (status === 'plan_to_watch') return 'planned';
+  if (['planned', 'watching', 'completed'].includes(status)) return status;
+  return fallback;
+}
+
+function parseJsonArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return value.split(',').map(item => item.trim()).filter(Boolean);
+    }
+  }
+  return [];
 }
 
 function authenticateToken(req, res, next) {
@@ -486,8 +508,8 @@ async function buildUserAchievements(userId) {
     dbGet(
       `SELECT
          COUNT(*) AS total,
-         SUM(CASE WHEN type = 'movie' AND status = 'watched' THEN 1 ELSE 0 END) AS watchedMovies,
-         SUM(CASE WHEN status = 'watched' THEN runtime ELSE 0 END) AS watchedMinutes,
+         SUM(CASE WHEN type = 'movie' AND status = 'completed' THEN 1 ELSE 0 END) AS watchedMovies,
+         SUM(CASE WHEN status = 'completed' THEN runtime ELSE 0 END) AS watchedMinutes,
          COUNT(DISTINCT date(created_at)) AS activeDays
        FROM entries
        WHERE user_id = ?`,
@@ -1183,7 +1205,7 @@ function setupDatabase() {
       user_id INTEGER,
       title TEXT NOT NULL,
       type TEXT NOT NULL,
-      status TEXT DEFAULT 'watched',
+      status TEXT DEFAULT 'completed',
       rating INTEGER,
       year INTEGER,
       genre TEXT,
@@ -1420,7 +1442,7 @@ app.post('/api/entries', authenticateToken, (req, res) => {
   db.run(
     `INSERT INTO entries (user_id, title, type, status, rating, year, genre, tags, mood, poster_url, director, runtime, comment, current_season, current_episode, next_episode_date, created_by_admin, is_favorite)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [userId, String(title).trim(), type || 'movie', status || 'watched', normalizeRatingValue(rating), year || null, genreJson, tagsJson, mood || '', posterUrl || '', director || '', runtime || 0, comment || '', currentSeason || 0, currentEpisode || 0, nextEpisodeDate || '', createdByAdmin, isFavorite ? 1 : 0],
+    [userId, String(title).trim(), type || 'movie', normalizeEntryStatus(status, 'completed'), normalizeRatingValue(rating), year || null, genreJson, tagsJson, mood || '', posterUrl || '', director || '', runtime || 0, comment || '', currentSeason || 0, currentEpisode || 0, nextEpisodeDate || '', createdByAdmin, isFavorite ? 1 : 0],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       logAudit(userId, 'entry:create', String(title).trim());
@@ -1449,7 +1471,7 @@ app.put('/api/entries/:id', authenticateToken, async (req, res) => {
       `UPDATE entries
        SET title=?, type=?, status=?, rating=?, year=?, genre=?, tags=?, mood=?, poster_url=?, director=?, runtime=?, comment=?, current_season=?, current_episode=?, next_episode_date=?, created_by_admin=?, is_favorite=?
        WHERE id=?`,
-      [String(title).trim(), type || 'movie', status || 'watched', normalizeRatingValue(rating), year || null, genreJson, tagsJson, mood || '', posterUrl || '', director || '', runtime || 0, comment || '', currentSeason || 0, currentEpisode || 0, nextEpisodeDate || '', createdByAdmin, isFavorite ? 1 : 0, entryId]
+      [String(title).trim(), type || 'movie', normalizeEntryStatus(status, 'completed'), normalizeRatingValue(rating), year || null, genreJson, tagsJson, mood || '', posterUrl || '', director || '', runtime || 0, comment || '', currentSeason || 0, currentEpisode || 0, nextEpisodeDate || '', createdByAdmin, isFavorite ? 1 : 0, entryId]
     );
     logAudit(userId, 'entry:update', String(title).trim());
     sendJson(res, { changes: result.changes });
@@ -1752,7 +1774,7 @@ app.get('/api/public/stats', (req, res) => {
                 SUM(is_favorite) AS favorites,
                 AVG(NULLIF(rating, 0)) AS averageRating,
                 SUM(CASE WHEN status = 'watching' THEN 1 ELSE 0 END) AS watchingNow,
-                SUM(CASE WHEN status = 'plan_to_watch' THEN 1 ELSE 0 END) AS backlog
+                SUM(CASE WHEN status = 'planned' THEN 1 ELSE 0 END) AS backlog
          FROM entries
          WHERE created_by_admin = 1`,
         [],
@@ -1873,7 +1895,7 @@ app.post('/api/admin/entries', authenticateToken, (req, res) => {
   db.run(
     `INSERT INTO entries (user_id, title, type, status, rating, year, genre, tags, mood, poster_url, director, runtime, comment, current_season, current_episode, next_episode_date, created_by_admin, is_favorite)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [userId, title, type, status || 'watched', normalizeRatingValue(rating), year || null, genreJson, tagsJson, mood || '', posterUrl || '', director || '', runtime || 0, comment || '', currentSeason || 0, currentEpisode || 0, nextEpisodeDate || '', 1, isFavorite ? 1 : 0],
+    [userId, title, type, normalizeEntryStatus(status, 'completed'), normalizeRatingValue(rating), year || null, genreJson, tagsJson, mood || '', posterUrl || '', director || '', runtime || 0, comment || '', currentSeason || 0, currentEpisode || 0, nextEpisodeDate || '', 1, isFavorite ? 1 : 0],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       logAudit(userId, 'admin:entry:create', title);
@@ -2001,7 +2023,7 @@ app.post('/api/sync-entries', authenticateToken, (req, res) => {
       db.run(
         `INSERT OR IGNORE INTO entries (user_id, title, type, status, rating, year, genre, tags, mood, poster_url, director, runtime, comment, current_season, current_episode, next_episode_date, created_by_admin, is_favorite)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, entry.title, entry.type, entry.status || 'watched', normalizeRatingValue(entry.rating), entry.year || null, genreJson, tagsJson, entry.mood || '', entry.posterUrl || '', entry.director || '', entry.runtime || 0, entry.comment || '', entry.currentSeason || 0, entry.currentEpisode || 0, entry.nextEpisodeDate || '', createdByAdmin, entry.isFavorite ? 1 : 0],
+        [userId, entry.title, entry.type, normalizeEntryStatus(entry.status, 'completed'), normalizeRatingValue(entry.rating), entry.year || null, genreJson, tagsJson, entry.mood || '', entry.posterUrl || '', entry.director || '', entry.runtime || 0, entry.comment || '', entry.currentSeason || 0, entry.currentEpisode || 0, entry.nextEpisodeDate || '', createdByAdmin, entry.isFavorite ? 1 : 0],
         function(err) {
           if (failed) return;
           if (err) {
@@ -2041,7 +2063,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
         SUM(CASE WHEN type = 'movie' THEN 1 ELSE 0 END) AS movies,
         SUM(CASE WHEN type = 'series' THEN 1 ELSE 0 END) AS series,
         SUM(CASE WHEN is_favorite = 1 THEN 1 ELSE 0 END) AS favorites,
-        SUM(CASE WHEN status = 'watched' THEN runtime ELSE 0 END) AS watchedMinutes,
+        SUM(CASE WHEN status = 'completed' THEN runtime ELSE 0 END) AS watchedMinutes,
         ROUND(AVG(rating), 1) AS averageRating
       FROM entries WHERE user_id = ?`,
         [userId]
@@ -2066,7 +2088,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 
     const genreCounts = {};
     entries.forEach(entry => {
-      const genres = entry.genre ? JSON.parse(entry.genre) : [];
+      const genres = parseJsonArray(entry.genre);
       genres.forEach(genre => { genreCounts[genre] = (genreCounts[genre] || 0) + 1; });
     });
     const topGenres = Object.entries(genreCounts)
@@ -2080,7 +2102,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
       .map(entry => ({ title: entry.title, rating: entry.rating, type: entry.type }));
     const recentActivity = entries.slice(0, 6).map(entry => ({
       title: entry.title,
-      status: entry.status,
+      status: normalizeEntryStatus(entry.status),
       type: entry.type,
       createdAt: entry.createdAt
     }));

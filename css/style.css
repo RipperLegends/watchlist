@@ -1388,7 +1388,8 @@ html {
   padding: 2px 8px;
 }
 
-.badge-status-watched {
+.badge-status-watched,
+.badge-status-completed {
   background: var(--status-watched);
   color: #fff;
 }
@@ -1398,7 +1399,8 @@ html {
   color: #fff;
 }
 
-.badge-status-plan_to_watch {
+.badge-status-plan_to_watch,
+.badge-status-planned {
   background: var(--status-plan);
   color: #fff;
 }

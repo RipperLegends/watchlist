@@ -98,9 +98,9 @@
   }
 
   function statusLabel(status) {
-    if (status === 'watched') return 'Переглянуто';
+    if (status === 'completed') return 'Переглянуто';
     if (status === 'watching') return 'Дивлюся';
-    if (status === 'plan_to_watch') return 'В планах';
+    if (status === 'planned') return 'В планах';
     return status || '—';
   }
 
@@ -202,7 +202,7 @@
           </td>
           <td>${escapeHTML(user.email)}</td>
           <td><span class="badge ${user.role === 'admin' ? 'badge-role-admin' : 'badge-role-user'}">${user.role}</span></td>
-          <td><span class="badge ${user.accountStatus === 'blocked' ? 'badge-status badge-status-plan_to_watch' : 'badge-status badge-status-watched'}">${accountStatusLabel(user.accountStatus)}</span></td>
+          <td><span class="badge ${user.accountStatus === 'blocked' ? 'badge-status badge-status-planned' : 'badge-status badge-status-completed'}">${accountStatusLabel(user.accountStatus)}</span></td>
           <td>
             <div class="admin-metric-stack">
               <span>${stats.total} записів</span>
@@ -486,7 +486,7 @@
     $('entry-id').value = entry?.id || '';
     $('entry-title').value = entry?.title || '';
     $('entry-type').value = entry?.type || 'movie';
-    $('entry-status').value = entry?.status || 'watched';
+    $('entry-status').value = entry?.status || 'completed';
     $('entry-rating').value = entry?.rating || 3;
     $('entry-year').value = entry?.year || '';
     $('entry-genre').value = Array.isArray(entry?.genre) ? entry.genre.join(', ') : '';

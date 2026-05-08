@@ -19,8 +19,10 @@
   const recentList = document.getElementById('home-recent-list');
 
   const STATUS_LABELS = {
+    completed: 'Переглянуто',
     watched: 'Переглянуто',
     watching: 'У процесі',
+    planned: 'У планах',
     plan_to_watch: 'У планах'
   };
 
@@ -32,6 +34,11 @@
   function normalizeEntry(entry) {
     return {
       ...entry,
+      status: entry.status === 'watched'
+        ? 'completed'
+        : entry.status === 'plan_to_watch'
+          ? 'planned'
+          : (entry.status || 'planned'),
       rating: Math.max(0, Math.min(5, Math.round(Number(entry.rating) || 0))),
       posterUrl: entry.posterUrl || entry.poster_url || '',
       createdAt: entry.createdAt || entry.created_at || ''
@@ -49,9 +56,9 @@
   }
 
   function renderStats(entries) {
-    const watched = entries.filter(entry => entry.status === 'watched').length;
+    const watched = entries.filter(entry => entry.status === 'completed').length;
     const watching = entries.filter(entry => entry.status === 'watching').length;
-    const planned = entries.filter(entry => entry.status === 'plan_to_watch').length;
+    const planned = entries.filter(entry => entry.status === 'planned').length;
     const rated = entries.filter(entry => entry.rating > 0);
     const average = rated.length
       ? (rated.reduce((sum, entry) => sum + entry.rating, 0) / rated.length).toFixed(1)

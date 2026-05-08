@@ -337,7 +337,7 @@
           title: 'Інтеграції за мовами і сценаріями',
           tabs: ['JavaScript', 'Python', 'cURL'],
           codeTitle: 'JavaScript приклад',
-          code: 'const response = await fetch("/api/entries", {\n  headers: { Authorization: `Bearer ${token}` }\n});\nconst entries = await response.json();\nconst planned = entries.filter(item => item.status === "plan_to_watch");',
+          code: 'const response = await fetch("/api/entries", {\n  headers: { Authorization: `Bearer ${token}` }\n});\nconst entries = await response.json();\nconst planned = entries.filter(item => item.status === "planned");',
           resources: [
             ['API-документація', '/api-docs.html'],
             ['Історія змін', '/changelog.html'],
