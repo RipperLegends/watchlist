@@ -1176,38 +1176,6 @@ async function broadcastPresence(userId) {
   })));
 }
 
-function seedAdmin() {
-  db.get('SELECT COUNT(*) AS count FROM users WHERE role = ?', ['admin'], (err, row) => {
-    if (err) return;
-    if (!row || row.count === 0) {
-      bcrypt.hash('admin', 10, (hashErr, hash) => {
-        if (hashErr) return;
-        db.run(
-          `INSERT INTO users (
-            name, email, password, role, presence_status, online_visibility, profile_visibility, friend_request_policy,
-            preferred_language, avatar_url, cover_url, bio, favorite_genres
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            'Admin',
-            'admin@watchlist.com',
-            hash,
-            'admin',
-            'online',
-            'everyone',
-            'everyone',
-            'everyone',
-            'UK',
-            '',
-            '',
-            'Керує каталогом Watchlist і слідкує за якістю спільноти.',
-            JSON.stringify(['Sci-Fi', 'Drama'])
-          ]
-        );
-      });
-    }
-  });
-}
-
 function ensureAdminZeroUser() {
   db.get('SELECT id, role FROM users WHERE id = ?', [0], (err, row) => {
     if (err) return;
@@ -1250,7 +1218,7 @@ function ensureAdminZeroUser() {
           [
             0,
             'Admin',
-            'admin0@watchlist.com',
+            'admin@watchlist.com',
             hash,
             'admin',
             'online',
@@ -1538,7 +1506,6 @@ function setupDatabase() {
     db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_name_unique ON users(name COLLATE NOCASE)`);
     db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users(email COLLATE NOCASE)`);
 
-    seedAdmin();
     ensureAdminZeroUser();
   });
 }
