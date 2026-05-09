@@ -9,6 +9,9 @@
   let interfaceObserver = null;
   let interfaceTranslateTimer = null;
   let deferredInstallPrompt = null;
+  let securityConfigPromise = null;
+  let turnstileScriptPromise = null;
+  const turnstileWidgets = new WeakMap();
   const LANGUAGE_LABELS = {
     UK: 'Українська (UA)',
     RU: 'Русский (RU)',
@@ -470,6 +473,99 @@
     return json;
   }
 
+  async function getSecurityConfig() {
+    if (!securityConfigPromise) {
+      securityConfigPromise = fetch(`${API_BASE}/security-config`)
+        .then(response => response.ok ? response.json() : { turnstile: { enabled: false, siteKey: '' } })
+        .catch(() => ({ turnstile: { enabled: false, siteKey: '' } }));
+    }
+    return securityConfigPromise;
+  }
+
+  function turnstileTokenInput(form) {
+    let input = form.querySelector('input[name="turnstileToken"]');
+    if (!input) {
+      input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'turnstileToken';
+      form.appendChild(input);
+    }
+    return input;
+  }
+
+  function turnstileContainer(form) {
+    let container = form.querySelector('[data-turnstile-container]');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'turnstile-field';
+      container.setAttribute('data-turnstile-container', '');
+      container.hidden = true;
+      const actions = form.querySelector('.form-actions');
+      form.insertBefore(container, actions || null);
+    }
+    return container;
+  }
+
+  function loadTurnstileScript() {
+    if (window.turnstile) return Promise.resolve(window.turnstile);
+    if (turnstileScriptPromise) return turnstileScriptPromise;
+
+    turnstileScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve(window.turnstile);
+      script.onerror = () => reject(new Error('Turnstile failed to load'));
+      document.head.appendChild(script);
+    });
+    return turnstileScriptPromise;
+  }
+
+  async function renderTurnstileForForm(form) {
+    if (!form || turnstileWidgets.has(form)) return;
+    const config = await getSecurityConfig();
+    if (!config?.turnstile?.enabled || !config.turnstile.siteKey) return;
+
+    const container = turnstileContainer(form);
+    const tokenInput = turnstileTokenInput(form);
+    container.hidden = false;
+
+    const turnstile = await loadTurnstileScript();
+    if (!turnstile?.render || turnstileWidgets.has(form)) return;
+
+    const widgetId = turnstile.render(container, {
+      sitekey: config.turnstile.siteKey,
+      theme: document.body.classList.contains('dark-theme') ? 'dark' : 'light',
+      language: 'auto',
+      callback: token => { tokenInput.value = token || ''; },
+      'expired-callback': () => { tokenInput.value = ''; },
+      'error-callback': () => { tokenInput.value = ''; }
+    });
+    turnstileWidgets.set(form, widgetId);
+  }
+
+  function resetTurnstileForForm(form) {
+    const widgetId = turnstileWidgets.get(form);
+    const tokenInput = form.querySelector('input[name="turnstileToken"]');
+    if (tokenInput) tokenInput.value = '';
+    if (window.turnstile && widgetId !== undefined) {
+      window.turnstile.reset(widgetId);
+    }
+  }
+
+  async function turnstileTokenForForm(form) {
+    const config = await getSecurityConfig();
+    if (!config?.turnstile?.enabled) return '';
+    const token = form.querySelector('input[name="turnstileToken"]')?.value
+      || form.querySelector('input[name="cf-turnstile-response"]')?.value
+      || '';
+    if (!token) {
+      throw new Error('Підтвердьте, що ви не бот.');
+    }
+    return token;
+  }
+
   function renderTopBarAuth() {
     const authEl = document.getElementById('top-bar-auth');
     if (!authEl) return;
@@ -871,6 +967,9 @@
     modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('auth-modal-open');
+    if (mode === 'register') {
+      renderTurnstileForForm(modal.querySelector('[data-auth-form="register"]')).catch(() => {});
+    }
     const targetInput = modal.querySelector(
       mode === 'register' ? '#reg-username-modal' : '#login-identifier-modal'
     );
@@ -898,6 +997,7 @@
       if (form.dataset.authBound === 'true') return;
       form.dataset.authBound = 'true';
       form.addEventListener('submit', handleRegister);
+      renderTurnstileForForm(form).catch(() => {});
     });
     root.querySelectorAll('[data-auth-form="login"]').forEach((form) => {
       if (form.dataset.authBound === 'true') return;
@@ -928,6 +1028,7 @@
 
     bindPasswordToggles(modal);
     bindAuthFormListeners(modal);
+    renderTurnstileForForm(modal.querySelector('[data-auth-form="register"]')).catch(() => {});
     return modal;
   }
 
@@ -1119,9 +1220,10 @@
     }
 
     try {
+      const turnstileToken = await turnstileTokenForForm(form);
       const data = await apiRequest('/register', {
         method: 'POST',
-        body: JSON.stringify({ username, email, password })
+        body: JSON.stringify({ username, email, password, turnstileToken })
       });
       setSession({ token: data.token, ...data.user });
       showToast('Реєстрація успішна!');
@@ -1129,6 +1231,7 @@
       setTimeout(() => { window.location.href = isAuthPage() ? 'index.html' : window.location.href; }, 800);
     } catch (error) {
       showToast(error.message);
+      resetTurnstileForForm(form);
     }
   }
 

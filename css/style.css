@@ -3599,6 +3599,10 @@ html {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+.turnstile-field {
+  min-height: 65px;
+}
+
 .auth-input-shell {
   position: relative;
   display: flex;

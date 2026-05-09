@@ -18,6 +18,9 @@ const REGISTRATION_MODE = String(process.env.REGISTRATION_MODE || 'open').trim()
 const REGISTRATION_RATE_LIMIT = Number(process.env.REGISTRATION_RATE_LIMIT || 5);
 const REGISTRATION_RATE_WINDOW_MS = Number(process.env.REGISTRATION_RATE_WINDOW_MS || 15 * 60 * 1000);
 const REGISTRATION_MAX_ACCOUNTS_PER_IP = Number(process.env.REGISTRATION_MAX_ACCOUNTS_PER_IP || 5);
+const TURNSTILE_SITE_KEY = String(process.env.TURNSTILE_SITE_KEY || '').trim();
+const TURNSTILE_SECRET_KEY = String(process.env.TURNSTILE_SECRET_KEY || '').trim();
+const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const DB_FILE = process.env.DB_FILE
   ? path.resolve(__dirname, process.env.DB_FILE)
   : path.join(__dirname, 'watchlist.db');
@@ -432,6 +435,53 @@ function registrationIpHash(req) {
     .createHash('sha256')
     .update(`${SECRET_KEY}:${clientIp(req)}`)
     .digest('hex');
+}
+
+function isTurnstileEnabled() {
+  return Boolean(TURNSTILE_SITE_KEY && TURNSTILE_SECRET_KEY);
+}
+
+function publicError(message, statusCode = 400) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  error.publicMessage = message;
+  return error;
+}
+
+async function verifyTurnstile(req, token) {
+  if (!isTurnstileEnabled()) return;
+  const responseToken = String(token || '').trim();
+  if (!responseToken || responseToken.length > 2048) {
+    throw publicError('Підтвердьте, що ви не бот.');
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4000);
+
+  try {
+    const response = await fetch(TURNSTILE_VERIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        secret: TURNSTILE_SECRET_KEY,
+        response: responseToken,
+        remoteip: clientIp(req),
+        idempotency_key: crypto.randomUUID()
+      })
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result?.success) {
+      console.warn('Turnstile verification failed:', result?.['error-codes'] || response.status);
+      throw publicError('Не вдалося пройти перевірку безпеки.');
+    }
+  } catch (error) {
+    if (error.statusCode) throw error;
+    console.error('Turnstile verification error:', error.message);
+    throw publicError('Перевірка безпеки тимчасово недоступна.', 503);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function enforceRegistrationLimits(req, email) {
@@ -1495,10 +1545,20 @@ function setupDatabase() {
 
 setupDatabase();
 
+app.get('/api/security-config', (req, res) => {
+  res.json({
+    turnstile: {
+      enabled: isTurnstileEnabled(),
+      siteKey: isTurnstileEnabled() ? TURNSTILE_SITE_KEY : ''
+    }
+  });
+});
+
 app.post('/api/register', async (req, res) => {
   const username = normalizeUsername(req.body.name || req.body.username);
   const email = normalizeEmail(req.body.email);
   const { password } = req.body;
+  const turnstileToken = req.body.turnstileToken || req.body['cf-turnstile-response'];
   if (isRegistrationClosed()) {
     return res.status(403).json({ error: 'Registration is temporarily closed' });
   }
@@ -1521,6 +1581,7 @@ app.post('/api/register', async (req, res) => {
   let registrationAttempt = null;
   try {
     registrationAttempt = await enforceRegistrationLimits(req, email);
+    await verifyTurnstile(req, turnstileToken);
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await dbRun(
       `INSERT INTO users (
@@ -1538,6 +1599,9 @@ app.post('/api/register', async (req, res) => {
     }
     if (error.statusCode === 429) {
       return res.status(429).json({ error: error.publicMessage || 'Too many registration attempts. Try again later.' });
+    }
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.publicMessage || 'Registration failed' });
     }
     res.status(400).json({ error: 'Login or email already exists' });
   }
