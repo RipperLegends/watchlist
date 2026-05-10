@@ -37,6 +37,12 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 const pageRoutes = {
+  '/login': 'login.html',
+  '/register': 'register.html',
+  '/profile': 'profile.html',
+  '/settings': 'settings.html',
+  '/admin': 'admin.html',
+  '/catalog': 'catalog.html',
   '/watchlist': 'watchlist.html',
   '/watchlist-plus': 'watchlist-plus.html',
   '/friends': 'friends.html',
@@ -423,17 +429,21 @@ function isValidEmail(email) {
 }
 
 function clientIp(req) {
+  const cloudflareIp = req.headers['cf-connecting-ip'];
+  if (typeof cloudflareIp === 'string' && cloudflareIp.trim()) {
+    return cloudflareIp.trim();
+  }
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string' && forwarded.trim()) {
     return forwarded.split(',')[0].trim();
   }
-  return req.ip || req.socket?.remoteAddress || 'unknown';
+  return req.ip || req.socket?.remoteAddress || '';
 }
 
 function registrationIpHash(req) {
   return crypto
     .createHash('sha256')
-    .update(`${SECRET_KEY}:${clientIp(req)}`)
+    .update(`${SECRET_KEY}:${clientIp(req) || 'unknown'}`)
     .digest('hex');
 }
 
@@ -459,16 +469,19 @@ async function verifyTurnstile(req, token) {
   const timeout = setTimeout(() => controller.abort(), 4000);
 
   try {
+    const ip = clientIp(req);
+    const body = {
+      secret: TURNSTILE_SECRET_KEY,
+      response: responseToken,
+      idempotency_key: crypto.randomUUID()
+    };
+    if (ip) body.remoteip = ip;
+
     const response = await fetch(TURNSTILE_VERIFY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
-      body: JSON.stringify({
-        secret: TURNSTILE_SECRET_KEY,
-        response: responseToken,
-        remoteip: clientIp(req),
-        idempotency_key: crypto.randomUUID()
-      })
+      body: JSON.stringify(body)
     });
     const result = await response.json().catch(() => null);
     if (!response.ok || !result?.success) {
@@ -1541,8 +1554,8 @@ app.post('/api/register', async (req, res) => {
   if (isPlaceholderEmail(email)) {
     return res.status(400).json({ error: 'Use a real email address' });
   }
-  if (String(password).length < 8) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  if (String(password).length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
 
   let registrationAttempt = null;

@@ -19,6 +19,11 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.js" },
+    { "src": "/login", "dest": "/login.html" },
+    { "src": "/register", "dest": "/register.html" },
+    { "src": "/profile", "dest": "/profile.html" },
+    { "src": "/settings", "dest": "/settings.html" },
+    { "src": "/admin", "dest": "/admin.html" },
     { "src": "/catalog", "dest": "/catalog.html" },
     { "src": "/watchlist", "dest": "/watchlist.html" },
     { "src": "/watchlist-plus", "dest": "/watchlist-plus.html" },
