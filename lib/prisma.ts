@@ -7,7 +7,7 @@ const globalForPrisma = globalThis as unknown as {
   pgPool?: Pool;
 };
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL || "postgres://dummy:dummy@localhost:5432/dummy";
 const pgPool =
   connectionString
     ? globalForPrisma.pgPool ??
