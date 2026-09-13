@@ -8,7 +8,7 @@ on:
       target_url:
         description: 'URL для сканування (Staging або Prod)'
         required: true
-        default: 'https://staging.yourdomain.com'
+        default: 'https://www.watchlist.pp.ua'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -28,7 +28,7 @@ jobs:
       - name: ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.15.0
         with:
-          target: ${{ github.event.inputs.target_url || 'https://staging.yourdomain.com' }}
+          target: ${{ github.event.inputs.target_url || 'https://www.watchlist.pp.ua' }}
           fail_action: false # Змініть на true, якщо хочете жорстко блокувати реліз при знаходженні вразливостей
 
   load-test:
@@ -42,11 +42,6 @@ jobs:
         uses: grafana/setup-k6-action@v1
 
       - name: Run k6 load test
-        run: |
-          if [ "${{ github.event.inputs.target_url || 'https://staging.yourdomain.com' }}" == "https://staging.yourdomain.com" ]; then
-            echo "Skipping load test because URL is a dummy placeholder (staging.yourdomain.com)."
-            exit 0
-          fi
-          k6 run tests/load-test.js
+        run: k6 run tests/load-test.js
         env:
-          TARGET_URL: ${{ github.event.inputs.target_url || 'https://staging.yourdomain.com' }}
+          TARGET_URL: ${{ github.event.inputs.target_url || 'https://www.watchlist.pp.ua' }}
