@@ -8,6 +8,7 @@ on:
 
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   audit-and-lint:
@@ -43,7 +44,7 @@ jobs:
         run: pnpm audit --prod --audit-level critical
 
       - name: 🗄️ Generate Prisma Client
-        run: pnpm dlx prisma generate
+        run: pnpm exec prisma generate
 
       - name: 🧹 Linting
         run: pnpm lint
