@@ -6,7 +6,7 @@ import { MessageCircle, ShieldOff, UserCheck, UserMinus, UserPlus, X, MoreVertic
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FriendActivityFeed } from "@/components/friends/activity-feed";
+import { FriendActivityFeed, type Activity } from "@/components/friends/activity-feed";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -101,7 +101,7 @@ export function FriendsClient({
 }: {
   initialFriends: FriendRelation[];
   currentUserId: number;
-  initialActivities?: unknown[];
+  initialActivities?: Activity[];
 }) {
   const [friends, setFriends] = React.useState(initialFriends);
   const [activities, setActivities] = React.useState(initialActivities);
