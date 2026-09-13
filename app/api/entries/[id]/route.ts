@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { entrySchema } from "@/lib/validators";
 
 type RouteContext = {
@@ -7,15 +7,15 @@ type RouteContext = {
 };
 
 export async function PUT(request: Request, context: RouteContext) {
-  const user = await requireUser();
-  if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const admin = await requireAdmin();
+  if (!admin) return Response.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await context.params;
   const payload = await request.json().catch(() => null);
   const parsed = entrySchema.safeParse(payload);
   if (!parsed.success) return Response.json({ error: "Invalid payload" }, { status: 400 });
 
   const existingEntry = await prisma.entry.findFirst({
-    where: { id: Number(id), userId: Number(user.id) },
+    where: { id: Number(id) },
     select: { id: true }
   });
   if (!existingEntry) return Response.json({ error: "Not found" }, { status: 404 });
@@ -32,12 +32,12 @@ export async function PUT(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const user = await requireUser();
-  if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const admin = await requireAdmin();
+  if (!admin) return Response.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await context.params;
 
   await prisma.entry.deleteMany({
-    where: { id: Number(id), userId: Number(user.id) }
+    where: { id: Number(id) }
   });
 
   return Response.json({ ok: true });

@@ -50,6 +50,11 @@
 
   body {
     @apply min-h-screen bg-background text-foreground antialiased;
+    overflow-x: clip;
+  }
+
+  html {
+    overflow-x: clip;
   }
 
   a {

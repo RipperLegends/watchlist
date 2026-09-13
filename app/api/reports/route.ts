@@ -8,7 +8,13 @@ export async function GET() {
 
   const reports = await prisma.report.findMany({
     where: user.role === "admin" ? {} : { userId: Number(user.id) },
-    include: { messages: { orderBy: { createdAt: "asc" } } },
+    include: {
+      messages: {
+        orderBy: { createdAt: "asc" },
+        include: { attachments: true }
+      },
+      attachments: true
+    },
     orderBy: { createdAt: "desc" }
   });
 

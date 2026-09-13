@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       name: { contains: query, mode: "insensitive" }
     },
     take: 10,
-    select: { id: true, name: true, email: true }
+    select: { id: true, name: true, avatarUrl: true }
   });
 
   return Response.json(users);

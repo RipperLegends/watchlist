@@ -4,17 +4,26 @@ node_modules/
 # Build output and caches
 dist/
 build/
+out/
 .next/
 .turbo/
 .cache/
+*.tsbuildinfo
+*.map
+*.js.map
+*.css.map
+temp_recover.jsonl
 
 # Environment files and local secrets
 .env
 .env.*
 !.env.example
 .envrc
+*.local
 *.pem
 *.key
+*.crt
+*.p12
 
 # Local databases
 watchlist.db

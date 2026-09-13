@@ -1,5 +1,6 @@
-import { auth } from "@/lib/auth";
-import { getEntriesForUser } from "@/lib/data";
+import { requireUser } from "@/lib/auth";
+import { getCatalogEntries } from "@/lib/data";
+import { getWatchlistPlusAccessForUser } from "@/lib/watchlist-plus";
 import { CatalogClient } from "@/components/catalog/catalog-client";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -7,8 +8,12 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function CatalogPage() {
-  const session = await auth();
-  const entries = await getEntriesForUser(session?.user?.id);
+  const user = await requireUser();
+  const [entries, plusAccess] = await Promise.all([
+    getCatalogEntries(user?.id),
+    getWatchlistPlusAccessForUser(user?.id)
+  ]);
+  const canManageCatalog = user?.role === "admin";
 
   return (
     <div className="page-shell flex flex-col gap-8">
@@ -16,14 +21,21 @@ export default async function CatalogPage() {
         <div className="flex flex-col gap-3">
           <h1 className="section-title">Каталог</h1>
           <p className="section-lead">
-            Ваші фільми, серіали і особисті нотатки. Коментар відкривається по кліку, щоб текст не розтягував всю сторінку.
+            Фільми й серіали додає адміністратор. Користувачі можуть ставити лайк або дизлайк окремо від адмінської оцінки.
           </p>
         </div>
-        <Button asChild>
-          <Link href={session?.user ? "/catalog/new" : "/login"}>Додати запис</Link>
-        </Button>
+        {canManageCatalog ? (
+          <Button asChild>
+            <Link href="/catalog/new">Додати фільм</Link>
+          </Button>
+        ) : null}
       </header>
-      <CatalogClient entries={entries} />
+      <CatalogClient
+        entries={entries}
+        canManage={canManageCatalog}
+        canReact={Boolean(user)}
+        canUsePersonalList={Boolean(user && plusAccess.active)}
+      />
     </div>
   );
 }

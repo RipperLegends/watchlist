@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "client"
 }
 
 datasource db {
@@ -74,66 +75,114 @@ enum SenderRole {
 }
 
 model User {
-  id                  Int             @id @default(autoincrement())
-  name                String          @unique
-  email               String          @unique
-  passwordHash        String          @map("password_hash")
-  role                UserRole        @default(user)
-  accountStatus       AccountStatus   @default(active) @map("account_status")
-  presenceStatus      PresenceStatus  @default(online) @map("presence_status")
-  lastSeen            DateTime?       @map("last_seen")
-  onlineVisibility    Visibility      @default(everyone) @map("online_visibility")
-  profileVisibility   Visibility      @default(everyone) @map("profile_visibility")
-  friendRequestPolicy Visibility      @default(everyone) @map("friend_request_policy")
-  preferredLanguage   Language        @default(UK) @map("preferred_language")
-  avatarUrl           String          @default("") @map("avatar_url")
-  coverUrl            String          @default("") @map("cover_url")
-  bio                 String          @default("")
-  favoriteGenres      Json            @default("[]") @map("favorite_genres")
-  createdAt           DateTime        @default(now()) @map("created_at")
-  entries             Entry[]
-  sentRelations       Friend[]        @relation("FriendUser")
-  receivedRelations   Friend[]        @relation("FriendTarget")
-  requestedRelations  Friend[]        @relation("FriendRequester")
-  sentMessages        FriendMessage[] @relation("MessageSender")
-  receivedMessages    FriendMessage[] @relation("MessageReceiver")
-  reports             Report[]
-  reportMessages      ReportMessage[]
-  auditLogs           AuditLog[]
-  ownedTeams          Team[]
-  teamMemberships     TeamMember[]
-  teamItems           TeamItem[]
-  teamVotes           TeamVote[]
+  id                     Int                 @id @default(autoincrement())
+  authUserId             String?             @unique @map("auth_user_id") @db.Uuid
+  name                   String              @unique
+  email                  String              @unique
+  passwordHash           String              @map("password")
+  role                   UserRole            @default(user)
+  accountStatus          AccountStatus       @default(active) @map("account_status")
+  presenceStatus         PresenceStatus      @default(online) @map("presence_status")
+  lastSeen               DateTime?           @map("last_seen")
+  onlineVisibility       Visibility          @default(everyone) @map("online_visibility")
+  profileVisibility      Visibility          @default(everyone) @map("profile_visibility")
+  friendRequestPolicy    Visibility          @default(everyone) @map("friend_request_policy")
+  preferredLanguage      Language            @default(UK) @map("preferred_language")
+  avatarUrl              String              @default("") @map("avatar_url")
+  coverUrl               String              @default("") @map("cover_url")
+  bio                    String              @default("")
+  favoriteGenres         Json                @default("[]") @map("favorite_genres")
+  watchlistPlusLifetime  Boolean             @default(false) @map("watchlist_plus_lifetime")
+  watchlistPlusUntil     DateTime?           @map("watchlist_plus_until")
+  watchlistPlusGrantedAt DateTime?           @map("watchlist_plus_granted_at")
+  watchlistPlusGrantedBy Int?                @map("watchlist_plus_granted_by")
+  createdAt              DateTime            @default(now()) @map("created_at")
+  entries                Entry[]
+  entryReactions         EntryReaction[]
+  watchlistItems         UserWatchlistItem[]
+  sentRelations          Friend[]            @relation("FriendUser")
+  receivedRelations      Friend[]            @relation("FriendTarget")
+  requestedRelations     Friend[]            @relation("FriendRequester")
+  sentMessages           FriendMessage[]     @relation("MessageSender")
+  receivedMessages       FriendMessage[]     @relation("MessageReceiver")
+  reports                Report[]
+  reportMessages         ReportMessage[]
+  reportAttachments      ReportAttachment[]
+  mfaResetCodes          MfaResetCode[]
+  auditLogs              AuditLog[]
+  ownedTeams             Team[]
+  teamMemberships        TeamMember[]
+  teamItems              TeamItem[]
+  teamVotes              TeamVote[]
+  deletedAt              DateTime?           @map("deleted_at")
 
   @@map("users")
 }
 
 model Entry {
+  id             Int                 @id @default(autoincrement())
+  userId         Int                 @map("user_id")
+  title          String
+  type           EntryType           @default(movie)
+  status         EntryStatus         @default(planned)
+  rating         Int                 @default(0)
+  year           Int?
+  genre          Json                @default("[]")
+  tags           Json                @default("[]")
+  mood           String              @default("")
+  posterUrl      String              @default("") @map("poster_url")
+  director       String              @default("")
+  runtime        Int                 @default(0)
+  comment        String              @default("")
+  currentSeason  Int                 @default(0) @map("current_season")
+  currentEpisode Int                 @default(0) @map("current_episode")
+  nextEpisodeAt  DateTime?           @map("next_episode_at")
+  isFavorite     Boolean             @default(false) @map("is_favorite")
+  sortOrder      Int                 @default(0) @map("sort_order")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions      EntryReaction[]
+  watchlistItems UserWatchlistItem[]
+
+  @@index([userId, sortOrder, createdAt])
+  @@index([type, sortOrder, createdAt])
+  @@map("entries")
+}
+
+model EntryReaction {
+  id        Int      @id @default(autoincrement())
+  entryId   Int      @map("entry_id")
+  userId    Int      @map("user_id")
+  value     Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  entry     Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, userId])
+  @@index([userId])
+  @@index([entryId, value])
+  @@map("entry_reactions")
+}
+
+model UserWatchlistItem {
   id             Int         @id @default(autoincrement())
   userId         Int         @map("user_id")
-  title          String
-  type           EntryType   @default(movie)
+  entryId        Int         @map("entry_id")
   status         EntryStatus @default(planned)
-  rating         Int         @default(0)
-  year           Int?
-  genre          Json        @default("[]")
-  tags           Json        @default("[]")
-  mood           String      @default("")
-  posterUrl      String      @default("") @map("poster_url")
-  director       String      @default("")
-  runtime        Int         @default(0)
-  comment        String      @default("")
   currentSeason  Int         @default(0) @map("current_season")
   currentEpisode Int         @default(0) @map("current_episode")
-  nextEpisodeAt  DateTime?   @map("next_episode_at")
-  isFavorite     Boolean     @default(false) @map("is_favorite")
-  sortOrder      Int         @default(0) @map("sort_order")
+  note           String      @default("")
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entry          Entry       @relation(fields: [entryId], references: [id], onDelete: Cascade)
 
-  @@index([userId, sortOrder, createdAt])
-  @@map("entries")
+  @@unique([userId, entryId])
+  @@index([userId, status, updatedAt])
+  @@index([entryId])
+  @@map("user_watchlist_items")
 }
 
 model Friend {
@@ -160,6 +209,7 @@ model Friend {
 
   @@unique([userId, friendId])
   @@index([userId, friendId, status])
+  @@index([friendId])
   @@map("friends")
 }
 
@@ -210,16 +260,16 @@ model TeamMember {
 }
 
 model TeamItem {
-  id          Int        @id @default(autoincrement())
-  teamId      Int        @map("team_id")
+  id          Int         @id @default(autoincrement())
+  teamId      Int         @map("team_id")
   title       String
-  type        EntryType  @default(movie)
+  type        EntryType   @default(movie)
   status      EntryStatus @default(planned)
-  scheduledAt DateTime?  @map("scheduled_at")
-  createdById Int        @map("created_by")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  team        Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  createdBy   User       @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  scheduledAt DateTime?   @map("scheduled_at")
+  createdById Int         @map("created_by")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  team        Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdBy   User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
   votes       TeamVote[]
 
   @@index([teamId, createdAt])
@@ -240,35 +290,57 @@ model TeamVote {
 }
 
 model Report {
-  id            Int             @id @default(autoincrement())
-  userId        Int?            @map("user_id")
-  email         String          @default("")
+  id            Int                @id @default(autoincrement())
+  userId        Int?               @map("user_id")
+  email         String             @default("")
   subject       String
   body          String
-  status        ReportStatus    @default(new)
-  adminResponse String          @default("") @map("admin_response")
-  respondedAt   DateTime?       @map("responded_at")
-  respondedBy   Int?            @map("responded_by")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  user          User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status        ReportStatus       @default(new)
+  adminResponse String             @default("") @map("admin_response")
+  respondedAt   DateTime?          @map("responded_at")
+  respondedBy   Int?               @map("responded_by")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  user          User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages      ReportMessage[]
+  attachments   ReportAttachment[]
 
   @@index([userId, status, createdAt])
   @@map("reports")
 }
 
 model ReportMessage {
-  id         Int        @id @default(autoincrement())
-  reportId   Int        @map("report_id")
-  senderId   Int?       @map("sender_id")
-  senderRole SenderRole @default(user) @map("sender_role")
-  body       String
-  createdAt  DateTime   @default(now()) @map("created_at")
-  report     Report     @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  sender     User?      @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  id          Int                @id @default(autoincrement())
+  reportId    Int                @map("report_id")
+  senderId    Int?               @map("sender_id")
+  senderRole  SenderRole         @default(user) @map("sender_role")
+  body        String
+  createdAt   DateTime           @default(now()) @map("created_at")
+  report      Report             @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  sender      User?              @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  attachments ReportAttachment[]
 
   @@index([reportId, createdAt])
   @@map("report_messages")
+}
+
+model ReportAttachment {
+  id              Int            @id @default(autoincrement())
+  reportId        Int            @map("report_id")
+  reportMessageId Int?           @map("report_message_id")
+  userId          Int?           @map("user_id")
+  fileName        String         @map("file_name")
+  fileType        String         @map("file_type")
+  fileSize        Int            @map("file_size")
+  storagePath     String         @map("storage_path")
+  publicUrl       String         @map("public_url")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  report          Report         @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportMessage   ReportMessage? @relation(fields: [reportMessageId], references: [id], onDelete: Cascade)
+  user            User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([reportId, createdAt])
+  @@index([userId])
+  @@map("report_attachments")
 }
 
 model AuditLog {
@@ -277,8 +349,32 @@ model AuditLog {
   action    String
   details   String   @default("")
   createdAt DateTime @default(now()) @map("created_at")
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model MfaResetCode {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  codeHash  String    @map("code_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("mfa_reset_codes")
+}
+
+model RegistrationAttempt {
+  id          Int      @id @default(autoincrement())
+  ipHash      String   @map("ip_hash")
+  emailDomain String   @default("") @map("email_domain")
+  result      String   @default("allowed")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([ipHash, createdAt])
+  @@map("registration_attempts")
 }

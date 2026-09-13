@@ -1,66 +1,59 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin, requireUser } from "@/lib/auth";
+import { parseEntryFormData } from "@/lib/entry-form";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { TmdbSearch } from "@/components/catalog/tmdb-search";
 
 export const dynamic = "force-dynamic";
 
 async function createEntry(formData: FormData) {
   "use server";
-  const user = await requireUser();
-  if (!user) redirect("/login");
+  const admin = await requireAdmin();
+  if (!admin) redirect("/catalog");
 
-  const title = String(formData.get("title") ?? "").trim();
-  if (!title) return;
+  const data = parseEntryFormData(formData);
+  if (!data) return;
 
   await prisma.entry.create({
     data: {
-      userId: Number(user.id),
-      title,
-      type: String(formData.get("type") ?? "movie") as "movie" | "series" | "game",
-      status: String(formData.get("status") ?? "planned") as "planned" | "watching" | "completed",
-      rating: Number(formData.get("rating") ?? 0),
-      year: formData.get("year") ? Number(formData.get("year")) : null,
-      genre: String(formData.get("genre") ?? "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-      tags: String(formData.get("tags") ?? "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-      posterUrl: String(formData.get("posterUrl") ?? ""),
-      comment: String(formData.get("comment") ?? "")
+      userId: Number(admin.id),
+      ...data,
+      year: data.year ?? null
     }
   });
 
+  revalidatePath("/catalog");
+  revalidatePath("/");
   redirect("/catalog");
 }
 
 export default async function NewCatalogEntryPage() {
   const user = await requireUser();
   if (!user) redirect("/login");
+  if (user.role !== "admin") redirect("/catalog");
 
   return (
     <div className="page-shell">
       <Card className="mx-auto max-w-2xl">
         <CardHeader>
-          <CardTitle>Додати запис</CardTitle>
-          <CardDescription>5-бальна оцінка збережена як основний стандарт сайту.</CardDescription>
+          <CardTitle>Додати фільм або серіал</CardTitle>
+          <CardDescription>Додавати записи й задавати 5-бальну оцінку може тільки адміністратор.</CardDescription>
         </CardHeader>
         <CardContent>
           <form action={createEntry} className="flex flex-col gap-4">
+            <TmdbSearch />
             <Input name="title" placeholder="Назва" required />
             <div className="grid gap-4 md:grid-cols-3">
               <Select name="type" defaultValue="movie">
                 <option value="movie">Фільм</option>
                 <option value="series">Серіал</option>
-                <option value="game">Гра</option>
               </Select>
               <Select name="status" defaultValue="planned">
                 <option value="planned">Планую</option>

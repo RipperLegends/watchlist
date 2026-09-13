@@ -22,3 +22,12 @@ export function formatDate(value?: Date | string | null) {
     year: "numeric"
   }).format(new Date(value));
 }
+
+export function normalizeStringList(value: string, limit = 10) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .filter((item, index, array) => array.findIndex((candidate) => candidate.toLowerCase() === item.toLowerCase()) === index)
+    .slice(0, limit);
+}

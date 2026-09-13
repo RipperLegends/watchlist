@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
+import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { uploadSupportAttachment } from "@/lib/supabase-storage";
 import { reportSchema } from "@/lib/validators";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,8 +14,8 @@ export const dynamic = "force-dynamic";
 
 async function createReport(formData: FormData) {
   "use server";
-  const session = await auth();
-  if (!session?.user || session.user.role !== "user") redirect("/login");
+  const user = await requireUser();
+  if (!user || user.role !== "user") redirect("/login");
 
   const parsed = reportSchema.safeParse({
     subject: formData.get("subject"),
@@ -23,32 +25,61 @@ async function createReport(formData: FormData) {
 
   const report = await prisma.report.create({
     data: {
-      userId: Number(session.user.id),
-      email: session.user.email ?? "",
+      userId: Number(user.id),
+      email: user.email ?? "",
       subject: parsed.data.subject,
       body: parsed.data.body,
       messages: {
         create: {
-          senderId: Number(session.user.id),
+          senderId: Number(user.id),
           senderRole: "user",
           body: parsed.data.body
         }
       }
-    }
+    },
+    include: { messages: { orderBy: { createdAt: "asc" } } }
   });
+  const firstMessage = report.messages[0];
+
+  const file = formData.get("attachment");
+  if (file instanceof File && file.size > 0) {
+    const uploaded = await uploadSupportAttachment(Number(user.id), report.id, file);
+    if (uploaded) {
+      await prisma.reportAttachment.create({
+        data: {
+          reportId: report.id,
+          reportMessageId: firstMessage?.id,
+          userId: Number(user.id),
+          fileName: uploaded.fileName,
+          fileType: uploaded.fileType,
+          fileSize: uploaded.fileSize,
+          storagePath: uploaded.path,
+          publicUrl: uploaded.publicUrl
+        }
+      });
+    }
+  }
 
   await prisma.auditLog.create({
-    data: { userId: Number(session.user.id), action: "report.create", details: `report:${report.id}` }
+    data: { userId: Number(user.id), action: "report.create", details: `report:${report.id}` }
   });
+  revalidatePath("/contact-support");
+  redirect("/contact-support");
 }
 
 export default async function ContactSupportPage() {
-  const session = await auth();
-  const reports = session?.user
+  const user = await requireUser();
+  const reports = user
     ? await prisma.report.findMany({
-        where: { userId: Number(session.user.id) },
+        where: { userId: Number(user.id) },
         orderBy: { createdAt: "desc" },
-        include: { messages: { orderBy: { createdAt: "asc" } } }
+        include: {
+          messages: {
+            orderBy: { createdAt: "asc" },
+            include: { attachments: true }
+          },
+          attachments: true
+        }
       })
     : [];
 
@@ -63,13 +94,14 @@ export default async function ContactSupportPage() {
       <Card>
         <CardHeader>
           <CardTitle>Форма звернення</CardTitle>
-          <CardDescription>Максимально просто: тема і опис проблеми.</CardDescription>
+          <CardDescription>Максимально просто: тема, опис проблеми і скріншот за потреби.</CardDescription>
         </CardHeader>
         <CardContent>
-          {session?.user?.role === "user" ? (
+          {user?.role === "user" ? (
             <form action={createReport} className="flex flex-col gap-4">
               <Input name="subject" placeholder="Тема" required />
               <Textarea name="body" placeholder="Що сталося, на якій сторінці, що ви очікували побачити?" required />
+              <Input name="attachment" type="file" accept="image/png,image/jpeg,image/webp" />
               <Button type="submit">Надіслати звернення</Button>
             </form>
           ) : (
@@ -94,9 +126,18 @@ export default async function ContactSupportPage() {
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
                 {report.messages.map((message) => (
-                  <p key={message.id} className="rounded-md bg-muted p-3 text-sm">
-                    <b>{message.senderRole}:</b> {message.body}
-                  </p>
+                  <div key={message.id} className="rounded-md bg-muted p-3 text-sm">
+                    <p><b>{message.senderRole}:</b> {message.body}</p>
+                    {message.attachments.length ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {message.attachments.map((attachment) => (
+                          <a key={attachment.id} href={attachment.publicUrl} target="_blank" rel="noreferrer" className="rounded-md border bg-background px-2 py-1 text-xs font-semibold">
+                            {attachment.fileName}
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
                 ))}
               </CardContent>
             </Card>

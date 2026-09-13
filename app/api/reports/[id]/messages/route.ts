@@ -53,6 +53,11 @@ export async function POST(request: Request, context: RouteContext) {
         respondedBy: Number(user.id)
       }
     });
+  } else {
+    await prisma.report.update({
+      where: { id: Number(id) },
+      data: { status: "reviewing" }
+    });
   }
 
   return Response.json(message, { status: 201 });

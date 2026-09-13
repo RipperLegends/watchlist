@@ -3,13 +3,17 @@ import { z } from "zod";
 export const registerSchema = z.object({
   name: z.string().trim().min(2).max(40),
   email: z.string().trim().email(),
-  password: z.string().min(6).max(120)
+  password: z.string().min(6).max(120),
+  turnstileToken: z.string().trim().max(2048).optional().default("")
 });
 
 export const entrySchema = z.object({
   title: z.string().trim().min(1).max(120),
-  type: z.enum(["movie", "series", "game"]).default("movie"),
-  status: z.enum(["planned", "watching", "completed"]).default("planned"),
+  type: z.enum(["movie", "series"]).default("movie"),
+  status: z.preprocess(
+    (value) => (value === "watched" ? "completed" : value),
+    z.enum(["planned", "watching", "completed"])
+  ).default("planned"),
   rating: z.coerce.number().int().min(0).max(5).default(0),
   year: z.coerce.number().int().min(1888).max(2100).optional().nullable(),
   genre: z.array(z.string()).default([]),

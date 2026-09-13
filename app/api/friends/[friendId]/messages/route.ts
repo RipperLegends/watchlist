@@ -9,8 +9,10 @@ type RouteContext = {
 async function getAcceptedRelation(userId: number, friendId: number) {
   return prisma.friend.findFirst({
     where: {
-      userId,
-      friendId,
+      OR: [
+        { userId, friendId },
+        { userId: friendId, friendId: userId }
+      ],
       status: "accepted",
       blockedByFriend: false,
       blockedByUser: false
@@ -18,19 +20,45 @@ async function getAcceptedRelation(userId: number, friendId: number) {
   });
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const user = await requireUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
   const { friendId } = await context.params;
   const relation = await getAcceptedRelation(Number(user.id), Number(friendId));
   if (!relation) return Response.json({ error: "Not found" }, { status: 404 });
 
+  const { searchParams } = new URL(request.url);
+  const cursor = searchParams.get("cursor");
+  const limit = 50;
+
   const messages = await prisma.friendMessage.findMany({
     where: { relationId: relation.id },
-    orderBy: { createdAt: "asc" }
+    take: limit + 1,
+    cursor: cursor ? { id: Number(cursor) } : undefined,
+    orderBy: { createdAt: "desc" }
   });
 
-  return Response.json(messages);
+  let nextCursor: number | null = null;
+  if (messages.length > limit) {
+    const nextItem = messages.pop();
+    nextCursor = nextItem?.id ?? null;
+  }
+
+  const mapped = messages.reverse().map((message) => ({
+    id: message.id,
+    senderId: message.senderId,
+    receiverId: message.receiverId,
+    body: message.body,
+    contentTitle: message.contentTitle,
+    contentUrl: message.contentUrl,
+    readAt: message.readAt?.toISOString() ?? null,
+    createdAt: message.createdAt.toISOString()
+  }));
+
+  return Response.json({
+    data: mapped,
+    nextCursor
+  });
 }
 
 export async function POST(request: Request, context: RouteContext) {
