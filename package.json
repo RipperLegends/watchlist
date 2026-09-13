@@ -1,6 +1,6 @@
 {
   "name": "watchlist",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Watchlist full-stack app for movies, series, friends, messages and moderation.",
   "private": true,
   "engines": {
