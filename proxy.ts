@@ -88,7 +88,7 @@ function isBlockedPath(pathname: string) {
   );
 }
 
-export function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (!isBlockedPath(request.nextUrl.pathname)) {
     return NextResponse.next();
   }

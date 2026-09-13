@@ -37,9 +37,6 @@ const nextConfig = {
       }
     ];
   },
-  eslint: {
-    dirs: ["app", "components", "lib", "types"]
-  },
   images: {
     remotePatterns: [
       {
